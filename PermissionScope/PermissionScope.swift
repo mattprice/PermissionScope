@@ -267,7 +267,10 @@ typealias resultsForConfigClosure     = ([PermissionResult]) -> Void
             statusForPermission(type,
                 completion: { currentStatus in
                     let prettyDescription = type.prettyDescription
-                    if currentStatus == .Authorized {
+                    if type == .BluetoothPower && currentStatus == .Authorized {
+                        self.setButtonAuthorizedStyle(button)
+                        button.setTitle("Enabled \(prettyDescription)".localized.uppercaseString, forState: .Normal)
+                    } else if currentStatus == .Authorized {
                         self.setButtonAuthorizedStyle(button)
                         button.setTitle("Allowed \(prettyDescription)".localized.uppercaseString, forState: .Normal)
                     } else if currentStatus == .Unauthorized {
@@ -306,6 +309,8 @@ typealias resultsForConfigClosure     = ([PermissionResult]) -> Void
         
         if permission.type == .Bluetooth && askedBluetooth {
             triggerBluetoothStatusUpdate()
+        } else if permission.type == .BluetoothPower {
+            triggerBluetoothPowerStatusUpdate()
         } else if permission.type == .Motion && askedMotion {
             triggerMotionStatusUpdate()
         }
@@ -911,6 +916,55 @@ typealias resultsForConfigClosure     = ([PermissionResult]) -> Void
         }
     }
     
+    // MARK: Bluetooth Power
+
+    /**
+     Returns the current permission status for accessing Bluetooth.
+
+     - returns: Permission status for the requested type.
+     */
+    public func statusBluetoothPower() -> PermissionStatus {
+        switch bluetoothManager.state {
+        case .Unsupported, .PoweredOff:
+            return .Disabled
+        case .Unauthorized:
+            return .Unauthorized
+        case .PoweredOn, .Resetting:
+            return .Authorized
+        case .Unknown:
+            return .Unknown
+        }
+
+    }
+
+    /**
+     Requests access to Bluetooth, if necessary.
+     */
+    public func requestBluetoothPower() {
+        let status = statusBluetoothPower()
+        switch status {
+        case .Disabled:
+            showDisabledAlert(.BluetoothPower)
+        case .Unauthorized:
+            showDeniedAlert(.BluetoothPower)
+        case .Unknown:
+            triggerBluetoothPowerStatusUpdate()
+        default:
+            break
+        }
+
+    }
+
+    /**
+     Start and immediately stop bluetooth advertising to trigger
+     its permission dialog.
+     */
+    private func triggerBluetoothPowerStatusUpdate() {
+        if bluetoothManager.state == .Unknown {
+            waitingForBluetooth = true
+        }
+    }
+
     // MARK: Core Motion Activity
     
     /**
@@ -1236,6 +1290,8 @@ typealias resultsForConfigClosure     = ([PermissionResult]) -> Void
             permissionStatus = statusEvents()
         case .Bluetooth:
             permissionStatus = statusBluetooth()
+        case .BluetoothPower:
+            permissionStatus = statusBluetoothPower()
         case .Motion:
             permissionStatus = statusMotion()
         }

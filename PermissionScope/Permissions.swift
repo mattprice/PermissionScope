@@ -73,6 +73,10 @@ public typealias requestPermissionShowAlert     = (PermissionType) -> Void
     public let type: PermissionType = .Bluetooth
 }
 
+@objc public class BluetoothPowerPermission: NSObject, Permission {
+    public let type: PermissionType = .BluetoothPower
+}
+
 @objc public class MotionPermission: NSObject, Permission {
     public let type: PermissionType = .Motion
 }
